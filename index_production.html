@@ -1,0 +1,1147 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="description" content="AI Thinking - Chat with AI using text and images. Powered by Google Gemini.">    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%236366f1'><path d='m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z'/></svg>">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="index, follow">    <meta name="theme-color" content="#6366f1">    <meta name="apple-mobile-web-app-capable" content="yes">    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <title>AI Thinking</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    // You can add custom theme extensions here if needed
+                }
+            }
+        }
+    </script>
+
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js" defer></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Lato:wght@400;700&display=swap" rel="stylesheet">
+
+    <!-- 
+        FIX: Removed the separate Firebase module script from here.
+        It is now merged into the main script at the bottom.
+    -->
+
+    <link rel="stylesheet" href="style.css">
+
+<body class="bg-white dark:bg-gray-950 text-gray-900 dark:text-gray-200 flex items-center justify-center min-h-screen">
+
+    <div class="flex h-screen w-full relative overflow-hidden">
+
+        <div id="sidebar-overlay" class="hidden md:hidden"></div>
+
+        <aside id="sidebar" class="w-64 bg-gray-100 dark:bg-gray-900 flex flex-col flex-shrink-0 border-r border-gray-200 dark:border-gray-700 md:relative">
+            <!-- MODIFIED: Sidebar Header now includes Close button -->
+            <div class="p-4 border-b border-gray-200 dark:border-gray-700">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="font-semibold text-lg text-gray-800 dark:text-gray-200">Chats</h2> 
+                    <button id="sidebar-close-button" class="p-2 rounded-md text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800">
+                        <!-- Left Arrow Icon -->
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+                    </button>
+                </div>
+                <button id="new-chat-button" class="w-full bg-indigo-600 text-white rounded-lg p-2 font-semibold hover:bg-indigo-700 flex items-center justify-center gap-2 dark:bg-indigo-500 dark:hover:bg-indigo-600">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 8 4z"></path></svg>
+                    New Chat
+                </button>
+            </div>
+            
+            <!-- Chat List -->
+            <nav id="sidebar-nav" class="flex-1 overflow-y-auto p-2 space-y-1">
+                <ul id="chat-list" class="space-y-1">
+                    <!-- Chat items will be populated by JS -->
+                </ul>
+            </nav>
+        </aside>
+
+        <div class="flex flex-col flex-1 bg-white dark:bg-gray-950 overflow-hidden">
+            
+            <!-- Header -->
+            <header class="bg-gray-50 dark:bg-gray-900 p-4 border-b border-gray-200 dark:border-gray-700 shadow-md flex justify-between items-center">
+                
+                <button id="sidebar-toggle" class="p-2 rounded-md text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+                </button>
+
+                <h1 class="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-indigo-500 dark:text-indigo-400"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"></path><path d="M5 3v4"></path><path d="M19 17v4"></path><path d="M3 5h4"></path><path d="M17 19h4"></path></svg>
+                    AI Thinking
+                </h1>
+                
+                <div class="flex items-center gap-4">
+                    
+                    <div id="auth-container">
+                        <!-- Logged-out state (initially hidden, JS will show) -->
+                        <button id="google-login-button" class="hidden bg-indigo-600 text-white rounded-lg px-4 py-2 font-semibold hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 text-sm">
+                            Login with Google
+                        </button>
+                        <!-- Logged-in state (initially hidden, JS will show) -->
+                        <div id="user-profile-container" class="hidden flex items-center gap-2">
+                            <!-- Real Avatar (shown if photoURL exists) -->
+                            <!-- <img id="user-avatar" class="hidden w-8 h-8 rounded-full" src="" alt="Profile picture"> --> <!-- REMOVED -->
+                            <!-- Fallback Avatar (shown if no photoURL) -->
+                            <div id="user-avatar-fallback" class="hidden w-8 h-8 rounded-full bg-indigo-500 flex items-center justify-center text-sm font-semibold text-white">
+                                <span id="user-avatar-initials"></span>
+                            </div>
+                            <!-- User Name -->
+                            <span id="user-name" class="text-sm font-medium text-gray-700 dark:text-gray-300"></span>
+                            <button id="logout-button" class="text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-indigo-500 dark:hover:text-indigo-400">
+                                Logout
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- (Existing) Light/Dark Mode Toggle Button -->
+                    <button id="theme-toggle" class="p-2 rounded-full text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-gray-300 dark:focus:ring-gray-600">
+                        
+                        <!-- Sun Icon (hidden in dark mode) -->
+                        <!-- *** FIX: Re-added 'hidden' class. *** -->
+                        <!-- The JavaScript (initializeTheme) will correctly remove this class if in light mode. -->
+                        <!-- Starting with both icons hidden prevents a "flash" before the JS loads. -->
+                        <svg id="icon-sun" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="hidden"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
+                        
+                        <!-- Moon Icon (hidden in light mode) -->
+                        <svg id="icon-moon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="hidden"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+                    </button>
+                </div>
+            </header>
+            
+            <!-- Chat Container -->
+            <main id="chat-container" class="flex flex-col flex-1 overflow-y-auto p-4 md:p-6 space-y-4 bg-white dark:bg-gray-950">
+                <!-- Chat messages will be appended here -->
+            </main>
+            
+            <div id="image-preview-container" class="hidden p-4 pt-0 bg-gray-50 dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700">
+                <div class="relative inline-block w-24 h-24">
+                    <img id="image-preview" src="" class="w-full h-full object-cover rounded-md border border-gray-300 dark:border-gray-600">
+                    <button id="remove-image" class="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-0 w-6 h-6 flex items-center justify-center text-lg font-bold leading-none">&times;</button>
+                </div>
+            </div>
+
+            <!-- Input Form -->
+            <footer class="p-4 md:p-6 bg-gray-50 dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700">
+                <input type="file" id="image-upload" class="hidden" accept="image/*">
+                
+                <form id="chat-form" class="flex items-start gap-3">
+                    <button
+                        type="button"
+                        id="attach-button"
+                        class="bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 rounded-lg p-3 h-[48px] w-[48px] flex-shrink-0 flex items-center justify-center hover:bg-gray-200 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path></svg>
+                    </button>
+                    <textarea
+                        id="user-input"
+                        rows="1"
+                        placeholder="Message AI Thinking (or attach an image)"
+                        class="flex-1 bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-200 rounded-lg p-3 border border-gray-300 dark:border-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
+                        style="min-height: 48px; max-height: 200px;"
+                    ></textarea>
+                    <button
+                        id="send-button"
+                        type="submit"
+                        class="bg-indigo-600 text-white rounded-lg p-3 h-[48px] w-[48px] flex-shrink-0 flex items-center justify-center hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed dark:bg-indigo-500 dark:hover:bg-indigo-600"
+                    >
+                        <!-- Send Icon SVG -->
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+                    </button>
+                </form>
+            </footer>
+        </div> <!-- End main chat window -->
+
+    </div> <!-- End main layout container -->
+
+    <!-- 
+        FIX: Changed to type="module" and merged Firebase setup 
+        from the <head> into this single script.
+    -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-app.js";
+        import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-analytics.js";
+        import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-auth.js";
+        import { getFirestore, doc, getDoc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyDwMifrPCEWzulVyEFnNk5oAmIYyerWD64",
+            authDomain: "ai-thinking-62d70.firebaseapp.com",
+            projectId: "ai-thinking-62d70",
+            storageBucket: "ai-thinking-62d70.firebasestorage.app",
+            messagingSenderId: "63612573033",
+            appId: "1:63612573033:web:872a053ec1d9b6536b59f8",
+            measurementId: "G-V0RR90K9Q0"
+        };
+
+        // Firebase Init
+        let firebaseApp, firebaseAnalytics, firebaseAuth, googleProvider, db;
+        try {
+            firebaseApp = initializeApp(firebaseConfig);
+            firebaseAnalytics = getAnalytics(firebaseApp);
+            firebaseAuth = getAuth(firebaseApp);
+            googleProvider = new GoogleAuthProvider();
+            db = getFirestore(firebaseApp);
+        } catch (error) {
+            console.error('Firebase initialization failed:', error);
+        }
+
+        // --- (Existing script from here) ---
+
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+
+        const chatContainer = document.getElementById('chat-container');
+        const chatForm = document.getElementById('chat-form');
+        const userInput = document.getElementById('user-input');
+        const sendButton = document.getElementById('send-button');
+        const themeToggle = document.getElementById('theme-toggle');
+        const iconSun = document.getElementById('icon-sun');
+        const iconMoon = document.getElementById('icon-moon');
+        const htmlEl = document.documentElement;
+        
+        const attachButton = document.getElementById('attach-button');
+        const imageUploadInput = document.getElementById('image-upload');
+        const imagePreviewContainer = document.getElementById('image-preview-container');
+        const imagePreview = document.getElementById('image-preview');
+        const removeImageButton = document.getElementById('remove-image');
+        
+        const sidebar = document.getElementById('sidebar');
+        const sidebarToggle = document.getElementById('sidebar-toggle');
+        const sidebarOverlay = document.getElementById('sidebar-overlay');
+        const newChatButton = document.getElementById('new-chat-button');
+        const chatList = document.getElementById('chat-list');
+        const sidebarCloseButton = document.getElementById('sidebar-close-button');
+
+        const authContainer = document.getElementById('auth-container');
+        const googleLoginButton = document.getElementById('google-login-button');
+        const userProfileContainer = document.getElementById('user-profile-container');
+        // const userAvatar = document.getElementById('user-avatar'); // REMOVED
+        const logoutButton = document.getElementById('logout-button');
+        // NEW ELEMENTS
+        const userAvatarFallback = document.getElementById('user-avatar-fallback');
+        const userAvatarInitials = document.getElementById('user-avatar-initials');
+        const userName = document.getElementById('user-name');
+
+        const API_KEY = "AIzaSyD_ENXxC43nAjHB01QRYZeI9P-UuJK_Kcc";        const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${API_KEY}`;
+
+        let allChats = {};
+        let activeChatId = null;
+        let conversationHistory = []; // This will be a *reference* to the active chat's history
+        let isLoading = false;
+        let loaderElement = null;
+        
+        let attachedImageBase64 = null;
+        let attachedImageMimeType = null;
+
+        
+        chatForm.addEventListener('submit', handleSend);
+        
+        userInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                handleSend(e);
+            }
+        });
+
+        userInput.addEventListener('input', () => {
+            userInput.style.height = 'auto';
+            userInput.style.height = (userInput.scrollHeight) + 'px';
+        });
+
+        themeToggle.addEventListener('click', () => {
+            const isDark = htmlEl.classList.toggle('dark');
+            localStorage.setItem('theme', isDark ? 'dark' : 'light');
+            updateThemeIcons(isDark);
+        });
+        
+        attachButton.addEventListener('click', () => {
+            imageUploadInput.click();
+        });
+        
+        imageUploadInput.addEventListener('change', handleImageUpload);
+        removeImageButton.addEventListener('click', clearAttachedImage);
+        
+        newChatButton.addEventListener('click', () => createNewChat(true));
+        sidebarToggle.addEventListener('click', toggleSidebar);
+        sidebarOverlay.addEventListener('click', toggleSidebar);
+        sidebarCloseButton.addEventListener('click', toggleSidebar);
+
+        googleLoginButton.addEventListener('click', handleGoogleLogin);
+        logoutButton.addEventListener('click', handleLogout);
+
+
+        function startApp() {
+            initializeTheme();
+            initializeSidebar();
+            
+        }
+
+        function initializeTheme() {
+            const storedTheme = localStorage.getItem('theme');
+            const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            
+            let isDark;
+
+            if (storedTheme === 'light') {
+                isDark = false;
+            } else if (storedTheme === 'dark') {
+                isDark = true;
+            } else {
+                // No theme stored, use system preference.
+                isDark = systemPrefersDark;
+            }
+
+            // Apply the theme
+            if (isDark) {
+                htmlEl.classList.add('dark');
+            } else {
+                htmlEl.classList.remove('dark');
+            }
+            
+            // Update icons to match
+            updateThemeIcons(isDark);
+        }
+        
+        function initializeSidebar() {
+            const isMobile = window.innerWidth <= 768;
+            const sidebarHidden = localStorage.getItem('sidebarHidden') === 'true';
+
+            if (!isMobile && sidebarHidden) {
+                sidebar.classList.add('desktop-hidden');
+            }
+        }
+
+        function updateThemeIcons(isDark) {
+            if (isDark) {
+                iconMoon.classList.remove('hidden');
+                iconSun.classList.add('hidden');
+            } else {
+                iconMoon.classList.add('hidden');
+                iconSun.classList.remove('hidden');
+            }
+        }
+        
+        // MODIFIED: Sidebar Toggle Function (handles mobile and desktop)
+        function toggleSidebar() {
+            const isMobile = window.innerWidth <= 768; // Tailwind's 'md' breakpoint is 768px
+
+            if (isMobile) {
+                // Mobile logic: toggle overlay
+                sidebar.classList.toggle('open');
+                sidebarOverlay.classList.toggle('hidden');
+            } else {
+                // Desktop logic: toggle collapse, save preference
+                const isHidden = sidebar.classList.toggle('desktop-hidden');
+                localStorage.setItem('sidebarHidden', isHidden);
+            }
+        }
+        /**
+         * MODIFICATION: Handles both Logged-In (Firestore) and Logged-Out (Guest/localStorage) states.
+         */
+        function initializeAuth() {
+            onAuthStateChanged(firebaseAuth, (user) => {
+                if (user) {
+                    currentUser = user;
+                    const userId = user.uid;
+                    userChatDocRef = doc(db, 'users', userId, 'chatdata', 'user_chats');
+                    
+                    updateUIForLoggedInUser(user); // Updates header
+                    
+                    chatContainer.innerHTML = '<div class="p-4 text-center text-gray-500">Loading chats...</div>';
+                    chatList.innerHTML = '<li class="p-2 text-gray-500 dark:text-gray-400 text-sm">Loading...</li>';
+                    enableChatUI(false); // Disable inputs while loading
+                    userInput.placeholder = "Loading...";
+
+                } else {
+                    currentUser = null;
+                    if (chatSnapshotListener) {
+                        chatSnapshotListener();
+                        chatSnapshotListener = null;
+                    }
+                    userChatDocRef = null;
+                    updateUIForLoggedOutUser(); // MODIFIED: This now enables Guest Mode
+                }
+            });
+        }
+
+        function updateUIForLoggedInUser(user) {
+            // Show profile, hide login
+            userProfileContainer.classList.remove('hidden');
+            googleLoginButton.classList.add('hidden');
+            
+            const displayName = user.displayName || 'User';
+            // const photoURL = user.photoURL; // REMOVED
+
+            // Set user name
+            userName.textContent = displayName;
+
+            // REMOVED photoURL logic
+            // Always show the fallback initials
+            userAvatarInitials.textContent = displayName.charAt(0).toUpperCase();
+            // userAvatar.classList.add('hidden'); // REMOVED
+            userAvatarFallback.classList.remove('hidden');
+
+            // Chat UI enabling is now handled by attachChatListener
+        }
+
+        /**
+         * MODIFICATION: This function now sets up Guest Mode.
+         */
+        function updateUIForLoggedOutUser() {
+            // Show login, hide profile
+            userProfileContainer.classList.add('hidden');
+            googleLoginButton.classList.remove('hidden');
+
+            // Clear any previous user's chat state
+            allChats = {};
+            conversationHistory = [];
+            activeChatId = null;
+            
+            // Set guest message
+            chatContainer.innerHTML = '<div class="p-4 text-center text-gray-500">You are in Guest Mode. Chats are saved to your browser.</div>';
+            chatList.innerHTML = '<li class="p-2 text-gray-500 dark:text-gray-400 text-sm">Guest Mode</li>';
+            
+            // Enable chat UI for guest mode
+            enableChatUI(true); 
+            
+            // Load chats from localStorage
+            loadChatsFromLocalStorage();
+        }
+        function handleGoogleLogin() {
+            signInWithPopup(firebaseAuth, googleProvider)
+                .then((result) => {
+                    // This will trigger onAuthStateChanged, which updates the UI
+                    const user = result.user;
+                    console.log('Logged in as:', user.displayName);
+                }).catch((error) => {
+                    // Handle Errors here.
+                    console.error("Authentication failed:", error.message);
+                    addMessageToUI(`Login Error: ${error.message}`, 'error');
+                });
+        }
+
+        function handleLogout() {
+            signOut(firebaseAuth)
+                .then(() => {
+                    // This will trigger onAuthStateChanged, which updates the UI
+                    // and switches to guest mode.
+                    console.log('User signed out.');
+                }).catch((error) => {
+                    console.error('Logout failed:', error.message);
+                });
+        }
+        
+        /**
+         * MODIFICATION: Renamed param to `isEnabled`.
+         * This function now ONLY handles enabling/disabling inputs.
+         * Callers are responsible for setting text/placeholders.
+         */
+        function enableChatUI(isEnabled) {
+            userInput.disabled = !isEnabled;
+            sendButton.disabled = !isEnabled;
+            attachButton.disabled = !isEnabled;
+            newChatButton.disabled = !isEnabled;
+            
+            if (isEnabled) {
+                userInput.placeholder = "Message AI Thinking (or attach an image)";
+            }
+            // Callers will set placeholder to "Loading..." or "Error..." when false
+        }
+        
+        // --- (End of Auth Functions) ---
+        /**
+         * NEW: Loads chat data from localStorage for Guest Mode.
+         */
+        async function loadChatsFromLocalStorage() {
+            try {
+                allChats = JSON.parse(localStorage.getItem('allChats')) || {};
+                activeChatId = localStorage.getItem('activeChatId') || null;
+            } catch (error) {
+                console.error("Failed to parse localStorage chats:", error);
+                allChats = {};
+                activeChatId = null;
+                localStorage.removeItem('allChats');
+                localStorage.removeItem('activeChatId');
+            }
+
+            let loadedChatId = activeChatId;
+
+            // Check if the loaded activeChatId is valid
+            if (!loadedChatId || !allChats[loadedChatId]) {
+                if (Object.keys(allChats).length > 0) {
+                    // It's invalid, but other chats exist. Load the first one.
+                    loadedChatId = Object.keys(allChats)[0];
+                } else {
+                    // No chats exist at all. Create a new one.
+                    // This will create, save to localStorage, and render
+                    await createNewChat(false); // Creates, saves, and renders list
+                    loadedChatId = activeChatId; // Get the new ID
+                    return; // createNewChat already calls loadChat
+                }
+            }
+            
+            renderChatList(); 
+            await loadChat(loadedChatId);
+        }
+
+        function attachChatListener() {
+            if (!userChatDocRef) return;
+
+            // Unsubscribe from any old listener
+            if (chatSnapshotListener) chatSnapshotListener();
+
+            chatSnapshotListener = onSnapshot(userChatDocRef, async (docSnap) => {
+                // handleSend will manage the UI until isSending is false.
+                if (isSending) return;
+
+                try {
+                    if (docSnap.exists()) {
+                        // Document exists, load the data
+                        const data = docSnap.data();
+                        allChats = data.allChats || {};
+                        activeChatId = data.activeChatId || null;
+                    } else {
+                        // No document, this is a new user (or data was wiped)
+                        allChats = {};
+                        activeChatId = null;
+                    }
+
+                    let loadedChatId = activeChatId;
+
+                    // Check if the loaded activeChatId is valid
+                    if (!loadedChatId || !allChats[loadedChatId]) {
+                        if (Object.keys(allChats).length > 0) {
+                            // It's invalid, but other chats exist. Load the first one.
+                            loadedChatId = Object.keys(allChats)[0];
+                        } else {
+                            // No chats exist at all. Create a new one.
+                            // This will create, save to Firestore, and render
+                            await createNewChat(false); // Creates, saves, and renders list
+                            loadedChatId = activeChatId; // Get the new ID
+                        }
+                    }
+                    
+                    renderChatList(); // This will overwrite "Loading..." in the sidebar
+                    await loadChat(loadedChatId); // This will overwrite "Loading chats..." in the main window
+                    enableChatUI(true); // This will enable all inputs
+
+                } catch (error) {
+                    // This handles errors *inside* the snapshot logic (e.g., permission denied on createNewChat)
+                    console.error("Error processing chat snapshot:", error);
+                    addMessageToUI(`Error: Failed to load chat data. ${error.message}`, 'error');
+                    chatList.innerHTML = '<li class="p-2 text-gray-500 dark:text-gray-400 text-sm">Error loading</li>';
+                    
+                    enableChatUI(false); // Keep inputs disabled
+                    userInput.placeholder = "Error loading chat";
+                }
+
+            }, (error) => {
+                console.error("Error listening to chat data (onSnapshot listener):", error);
+                addMessageToUI(`Error: Could not load chat data. ${error.message}. (Hint: Check Firestore permissions)`, 'error');
+                chatList.innerHTML = '<li class="p-2 text-gray-500 dark:text-gray-400 text-sm">Error loading</li>';
+                
+                enableChatUI(false); // Keep inputs disabled
+                userInput.placeholder = "Error loading chat";
+            });
+        }
+
+        /**
+         * MODIFICATION: Saves to Firestore if logged in,
+         * or localStorage if in Guest Mode.
+         */
+        async function saveChatsToStorage() {
+            if (currentUser && userChatDocRef) {
+                // Logged in: Save to Firestore
+                try {
+                    await setDoc(userChatDocRef, { 
+                        allChats: allChats, 
+                        activeChatId: activeChatId 
+                    });
+                } catch (error) {
+                    console.error("Error saving chats to Firestore:", error);
+                    addMessageToUI(`Error: Failed to save chat. ${error.message}`, 'error');
+                }
+            } else {
+                // Logged out (Guest): Save to localStorage
+                try {
+                    localStorage.setItem('allChats', JSON.stringify(allChats));
+                    localStorage.setItem('activeChatId', activeChatId);
+                } catch (error) {
+                    console.error("Error saving chats to localStorage:", error);
+                    addMessageToUI(`Error: Failed to save chat to local storage. ${error.message}`, 'error');
+                }
+                return Promise.resolve();
+            }
+        }
+        /**
+         * Creates a new, blank chat and sets it as active.
+         * MODIFICATION: Now async to wait for save.
+         * MODIFICATION: Works in guest mode (removed !currentUser check)
+         */
+        async function createNewChat(load = true) {
+            // No longer need to check for currentUser
+            
+            const newId = `chat-${Date.now()}`;
+            allChats[newId] = { 
+                id: newId, 
+                title: "New Chat", 
+                history: [] 
+            };
+            activeChatId = newId;
+            
+            await saveChatsToStorage(); // Wait for the save to complete (works for both modes)
+            
+            if (load) {
+                await loadChat(newId); // This will render the list
+            } else {
+                renderChatList();
+            }
+            
+            if (sidebar.classList.contains('open') && load) {
+                toggleSidebar();
+            }
+        }
+
+        /**
+         * Loads a specific chat's history into the UI.
+         * MODIFICATION: Now async.
+         * MODIFICATION: Works in guest mode (removed !currentUser check)
+         */
+        async function loadChat(chatId) {
+            // No longer need to check for currentUser
+
+            if (!chatId || !allChats[chatId]) {
+                // This case should be handled by attachChatListener now,
+                // but as a fallback, we log a warning.
+                console.warn(`Chat ${chatId} not found, cannot load.`);
+                // If no chats, UI will show "No chats yet."
+                if (Object.keys(allChats).length === 0) {
+                    renderChatList();
+                    chatContainer.innerHTML = '';
+                }
+                return;
+            }
+
+            activeChatId = chatId;
+            const chat = allChats[chatId];
+            conversationHistory = chat.history; // Point to the active history
+
+            // Clear chat UI
+            chatContainer.innerHTML = '';
+            
+            // If guest mode, show the guest message at the top
+            if (!currentUser) {
+                 chatContainer.innerHTML = '<div class="p-4 text-center text-gray-500">You are in Guest Mode. Chats are saved to your browser.</div>';
+            }
+            
+            // Render existing messages without animation
+            for (const message of conversationHistory) {
+                const role = message.role;
+                const textPart = message.parts.find(p => p.text);
+                const dataPart = message.parts.find(p => p.inlineData);
+
+                const text = textPart ? textPart.text : "";
+                // Reconstruct image URL for UI
+                const imageUrl = dataPart ? `data:${dataPart.mimeType};base64,${dataPart.data}` : null;
+                
+                // Add message to UI (it will render instantly, as per our last change)
+                addMessageToUI(text, role, imageUrl);
+            }
+            
+            // This is now an async call
+            await saveChatsToStorage(); // Saves the new activeChatId
+            renderChatList(); // Updates active state in sidebar
+
+            if (sidebar.classList.contains('open')) {
+                toggleSidebar();
+            }
+            scrollToBottom(); // Scroll to bottom of loaded chat
+        }
+
+        async function deleteChat(chatId) {
+            // Safety: Don't allow deleting the last chat. Clear it instead.
+            if (Object.keys(allChats).length <= 1) {
+                allChats[chatId].history = [];
+                allChats[chatId].title = "New Chat";
+                await saveChatsToStorage(); // Save changes
+                await loadChat(chatId); // Reloads the (now empty) chat
+                // renderChatList() is called inside loadChat
+                return;
+            }
+            
+            delete allChats[chatId];
+
+            if (activeChatId === chatId) {
+                // If we deleted the active chat, load the first available (newest) one
+                const newActiveId = Object.keys(allChats).sort((a, b) => b.split('-')[1] - a.split('-')[1])[0];
+                activeChatId = newActiveId; // This will be saved by loadChat
+                await loadChat(newActiveId); // loadChat saves and renders
+            } else {
+                // Just update storage and list, don't need to reload
+                await saveChatsToStorage();
+                renderChatList();
+            }
+        }
+
+        /**
+         * Renders the list of chats in the sidebar.
+         * MODIFICATION: Shows "Guest Mode" if not logged in.
+         */
+        function renderChatList() {
+            chatList.innerHTML = ''; // Clear list
+            
+            if (!currentUser) {
+                 // Show "Guest Mode" but DON'T return, still show local chats
+                 chatList.innerHTML = '<li class="p-2 text-gray-500 dark:text-gray-400 text-sm">Guest Mode</li>';
+            }
+
+            const chatIds = Object.keys(allChats);
+            if (chatIds.length === 0) {
+                // This will append after "Guest Mode" if it exists, which is fine.
+                // Or we can just set it.
+                chatList.innerHTML += '<li class="p-2 text-gray-500 dark:text-gray-400 text-sm">No chats yet.</li>';
+                return;
+            }
+
+            // Sort chats by date (newest first)
+            chatIds.sort((a, b) => b.split('-')[1] - a.split('-')[1]);
+
+            for (const chatId of chatIds) {
+                const chat = allChats[chatId];
+                if (!chat) continue;
+                
+                const li = document.createElement('li');
+                li.className = `group flex items-center justify-between p-2 rounded-md cursor-pointer text-sm font-medium`;
+                
+                if (chat.id === activeChatId) {
+                    li.classList.add('bg-gray-200', 'dark:bg-gray-800', 'text-gray-900', 'dark:text-white');
+                } else {
+                    li.classList.add('text-gray-700', 'dark:text-gray-300', 'hover:bg-gray-200', 'dark:hover:bg-gray-800');
+                }
+                
+                // Chat Title Span
+                const titleSpan = document.createElement('span');
+                titleSpan.textContent = chat.title || "New Chat";
+                titleSpan.className = "truncate flex-1";
+                // Main li click loads chat
+                li.addEventListener('click', (e) => {
+                    if (e.target === li || e.target === titleSpan) {
+                        loadChat(chat.id);
+                    }
+                });
+                li.appendChild(titleSpan);
+
+                // Delete Button
+                const deleteButton = document.createElement('button');
+                deleteButton.className = "ml-2 text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0";
+                deleteButton.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V6z"/><path fill-rule="evenodd" d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1v1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4H4.118zM2.5 3V2h11v1h-11z"/></svg>`;
+                deleteButton.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    // Deletion is now instant.
+                    // if (confirm(`Are you sure you want to delete "${chat.title}"?`)) {
+                        deleteChat(chat.id);
+                    // }
+                });
+                
+                li.appendChild(deleteButton);
+                chatList.appendChild(li);
+            }
+        }
+        function handleImageUpload(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            if (file.size > 4 * 1024 * 1024) {
+                addMessageToUI('Error: Image file is too large (max 4MB).', 'error');
+                imageUploadInput.value = null; // Reset input
+                return;
+            }
+
+            if (!file.type.startsWith('image/')) {
+                addMessageToUI('Error: Only image files are allowed.', 'error');
+                imageUploadInput.value = null; // Reset input
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                const base64String = event.target.result;
+                imagePreview.src = base64String;
+                imagePreviewContainer.classList.remove('hidden');
+                
+                attachedImageMimeType = file.type;
+                attachedImageBase64 = base64String.split(',')[1];
+            };
+            reader.onerror = (error) => {
+                console.error('Error reading file:', error);
+                addMessageToUI('Error: Failed to read image file.', 'error');
+            };
+            reader.readAsDataURL(file);
+
+            imageUploadInput.value = null;
+        }
+
+        function clearAttachedImage() {
+            attachedImageBase64 = null;
+            attachedImageMimeType = null;
+            imagePreview.src = '';
+            imagePreviewContainer.classList.add('hidden');
+        }
+
+        /**
+         * Handles sending the user's message (text and/or image).
+         */
+        async function handleSend(e) {
+            e.preventDefault();
+            const prompt = userInput.value.trim();
+            // MODIFIED: Check for prompt OR image
+            if ((!prompt && !attachedImageBase64) || isLoading) return;
+
+            if (allChats[activeChatId].title === "New Chat" && prompt) {
+                allChats[activeChatId].title = prompt.length > 30 ? prompt.substring(0, 27) + '...' : prompt;
+                renderChatList(); // Update sidebar with new title
+                // We'll save this with the main save call later
+            }
+            
+            // *** FIX: Copy image data *before* clearing the UI preview ***
+            const imageSrcForUI = attachedImageBase64 ? imagePreview.src : null;
+            const imageToSend = attachedImageBase64;
+            const mimeToSend = attachedImageMimeType;
+
+            isSending = true; 
+
+            addMessageToUI(prompt, 'user', imageSrcForUI); 
+            
+            // *** FIX 1: Clear image preview immediately on send ***
+            // This is now safe because we've copied the data to imageToSend
+            clearAttachedImage();
+            
+            userInput.value = '';
+            userInput.style.height = '48px';
+            
+            setLoading(true);
+            
+            try {
+                // MODIFIED: Build multimodal user message
+                const userParts = [];
+                if (prompt) {
+                    userParts.push({ text: prompt });
+                }
+                
+                // *** FIX: Use the copied variables ***
+                if (imageToSend) {
+                    userParts.push({ 
+                        inlineData: {
+                            mimeType: mimeToSend,
+                            data: imageToSend 
+                        }
+                    });
+                }
+                // This now correctly pushes to the active chat's history
+                conversationHistory.push({ role: "user", parts: userParts });
+                
+                // MODIFIED: No longer pass prompt, API reads from history
+                const responseText = await callGeminiAPIWithRetry();
+                
+                setLoading(false);
+
+                // This also correctly pushes to the active chat's history
+                conversationHistory.push({ role: "model", parts: [{ text: responseText }] });
+                
+                await addMessageToUI(responseText, 'model');
+
+                await saveChatsToStorage(); 
+
+            } catch (error) {
+                console.error('Error fetching from Gemini:', error);
+                addMessageToUI(`Error: ${error.message}`, 'error');
+                setLoading(false);
+            } finally {
+                isSending = false;
+            }
+        }
+
+        /**
+         * Calls the Gemini API with exponential backoff.
+         * MODIFIED: No longer takes 'prompt' as param, uses history.
+         */
+        async function callGeminiAPIWithRetry(maxRetries = 3, delay = 1000) {
+            let attempt = 0;
+            while (attempt < maxRetries) {
+                try {
+                    const payload = {
+                        contents: allChats[activeChatId].history,
+                    };
+
+                    const response = await fetch(API_URL, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify(payload),
+                    });
+
+                    if (!response.ok) {
+                        if (response.status === 429) {
+                            throw new Error('Rate limit exceeded. Retrying...');
+                        }
+                        // Check if response is JSON before parsing
+                        const contentType = response.headers.get('content-type');
+                        if (contentType && contentType.includes('application/json')) {
+                            const errorData = await response.json();
+                            throw new Error(`API Error: ${errorData.error?.message || `${response.status} ${response.statusText}`}`);
+                        } else {
+                            throw new Error(`Server Error: ${response.status} ${response.statusText}. Please ensure /api/gemini endpoint exists.`);
+                        }
+                    }
+
+                    const result = await response.json();
+
+                    if (result.error) {
+                        throw new Error(result.error.message);
+                    }
+
+                    const text = result.candidates?.[0]?.content?.parts?.[0]?.text;
+                    
+                    if (!text) {
+                        // This can happen if the model only "thinks" but doesn't output text
+                        // (e.g., if you just send an image with no question)
+                        // We'll treat it as a non-error, just an empty response.
+                        console.warn("Model returned no text response.");
+                        return "Got it. What would you like to know about the image?";
+                    }
+                    
+                    return text; // Success
+
+                } catch (error) {
+                    console.warn(`Attempt ${attempt + 1} failed: ${error.message}`);
+                    attempt++;
+                    if (attempt >= maxRetries) {
+                        throw error; // All retries failed
+                    }
+                    await new Promise(resolve => setTimeout(resolve, delay * Math.pow(2, attempt)));
+                }
+            }
+        }
+
+        /**
+         * Adds a message to the chat UI.
+         * MODIFIED: Added 'imageUrl' param.
+         */
+        function addMessageToUI(text, role, imageUrl = null) {
+            
+            // *** FIX 2: Refactored user message logic ***
+            if (role === 'user') {
+                // Create a wrapper for alignment, animation, and grouping
+                const wrapperDiv = document.createElement('div');
+                wrapperDiv.style.display = 'flex';
+                wrapperDiv.style.flexDirection = 'column';
+                wrapperDiv.style.alignItems = 'flex-end'; // Aligns items to the right
+                wrapperDiv.style.gap = '0.5rem'; // Space between image and text
+                wrapperDiv.style.alignSelf = 'flex-end'; // Aligns the whole wrapper to the right
+                
+                // We apply animation to the wrapper, not the bubbles
+                wrapperDiv.style.opacity = '0';
+                wrapperDiv.style.transform = 'translateY(20px)';
+                wrapperDiv.style.animation = 'fadeIn 0.3s ease-out forwards';
+                wrapperDiv.style.maxWidth = '90%'; // Match message-bubble max-width
+
+                if (imageUrl) {
+                    const img = document.createElement('img');
+                    img.src = imageUrl;
+                    // Apply message-bubble for animation, but override padding
+                    img.className = 'w-48 max-w-full object-cover rounded-[0.75rem] rounded-br-[0.25rem] message-bubble cursor-pointer';
+                    img.style.padding = '0'; // Image has no padding
+                    img.style.alignSelf = 'flex-end'; // Ensure image is also aligned end
+                    
+                    // Add click handler for enlargement
+                    img.addEventListener('click', () => {
+                        const modal = document.createElement('div');
+                        modal.className = 'image-modal';
+                        const enlargedImg = document.createElement('img');
+                        enlargedImg.src = imageUrl;
+                        modal.appendChild(enlargedImg);
+                        modal.addEventListener('click', () => modal.remove());
+                        document.body.appendChild(modal);
+                    });
+                    
+                    wrapperDiv.appendChild(img);
+                }
+                
+                if (text) {
+                    const textBubble = document.createElement('div');
+                    // This bubble gets all the standard styles
+                    textBubble.classList.add('message-bubble', 'user-message');
+                    textBubble.textContent = text;
+                    wrapperDiv.appendChild(textBubble);
+                }
+                
+                chatContainer.appendChild(wrapperDiv);
+                
+                return Promise.resolve(); // No animation for user
+                
+            } else if (role === 'model') {
+                // This block needs its own messageDiv
+                const messageDiv = document.createElement('div');
+                messageDiv.classList.add('message-bubble');
+                
+                // setLoading(false); 
+
+                messageDiv.classList.add('model-message');
+                
+                const proseDiv = document.createElement('div');
+                proseDiv.className = "prose prose-light-fix max-w-none";
+                
+                // Parse the full text as Markdown immediately
+                proseDiv.innerHTML = marked.parse(text);
+
+                // Highlight all code blocks
+                const codeBlocks = proseDiv.querySelectorAll('pre code');
+                if (codeBlocks.length > 0) {
+                    // Lazy load highlight.js only when needed
+                    if (typeof hljs === 'undefined') {
+                        const script = document.createElement('script');
+                        script.src = 'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js';
+                        script.onload = () => {
+                            codeBlocks.forEach(block => hljs.highlightElement(block));
+                        };
+                        document.head.appendChild(script);
+                    } else {
+                        codeBlocks.forEach(block => hljs.highlightElement(block));
+                    }
+                }
+                
+                // Add copy buttons to <pre> elements
+                addCopyButtons(proseDiv); 
+                
+                messageDiv.appendChild(proseDiv);
+                chatContainer.appendChild(messageDiv);
+                
+                // Check if user is near the bottom, if so, scroll.
+                const isScrolledNearBottom = chatContainer.scrollHeight - chatContainer.clientHeight <= chatContainer.scrollTop + 100; // 100px buffer
+                if (isScrolledNearBottom) {
+                    scrollToBottom();
+                }
+                
+                return Promise.resolve();
+                
+            } else if (role === 'error') {
+                // This block needs its own messageDiv
+                const messageDiv = document.createElement('div');
+                messageDiv.classList.add('message-bubble');
+
+                messageDiv.classList.add('error-message');
+                messageDiv.textContent = text;
+                chatContainer.appendChild(messageDiv); 
+                scrollToBottom();
+                
+                // Auto-remove error message after 3 seconds
+                setTimeout(() => {
+                    if (messageDiv.parentNode) {
+                        messageDiv.remove();
+                    }
+                }, 3000);                return Promise.resolve();
+            }
+        }
+
+        /**
+         * MODIFICATION: REMOVED animateResponse function
+         * Animation is no longer used, formatting is instant.
+         */
+        
+        function setLoading(state) {
+            isLoading = state;
+            sendButton.disabled = state;
+            userInput.disabled = state;
+            attachButton.disabled = state;
+
+            if (state) {
+                // Show loader
+                if (loaderElement) return; // Already showing
+                
+                loaderElement = document.createElement('div');
+                loaderElement.classList.add('message-bubble', 'loader-bubble');
+                
+                const spinner = document.createElement('div');
+                spinner.classList.add('spinner');
+                
+                loaderElement.appendChild(spinner);
+                chatContainer.appendChild(loaderElement);
+                scrollToBottom();
+                
+            } else {
+                // Hide loader
+                if (loaderElement) {
+                    loaderElement.remove();
+                    // loaderElement.remove(); 
+                    loaderElement = null;
+                }
+            }
+        } 
+        
+        function scrollToBottom() {
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+
+        function addCopyButtons(container) {
+            container.querySelectorAll('pre').forEach(preBlock => {
+                const codeBlock = preBlock.querySelector('code');
+                if (!codeBlock) return;
+
+                const copyButton = document.createElement('button');
+                copyButton.className = 'copy-button';
+                
+                const copyIcon = `
+                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="inline-block mr-1">
+                        <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                    </svg>Copy`;
+                copyButton.innerHTML = copyIcon;
+
+                copyButton.addEventListener('click', () => {
+                    const codeToCopy = codeBlock.innerText;
+                    
+                    try {
+                        // Use modern clipboard API if available (preferred)
+                        if (navigator.clipboard && window.isSecureContext) {
+                            navigator.clipboard.writeText(codeToCopy);
+                        } else {
+                            // Fallback for insecure contexts or older browsers
+                            const textArea = document.createElement('textarea');
+                            textArea.value = codeToCopy;
+                            textArea.style.position = 'absolute';
+                            textArea.style.left = '-9999px';
+                            document.body.appendChild(textArea);
+                            textArea.select();
+                            document.execCommand('copy');
+                            document.body.removeChild(textArea);
+                        }
+
+                        copyButton.textContent = 'Copied!';
+                        setTimeout(() => {
+                            copyButton.innerHTML = copyIcon;
+                        }, 2000);
+                    } catch (err) {
+                        console.error('Failed to copy text: ', err);
+                        copyButton.textContent = 'Error';
+                         setTimeout(() => {
+                            copyButton.innerHTML = copyIcon;
+                        }, 2000);
+                    }
+                });
+
+                preBlock.appendChild(copyButton);
+            });
+        }
+        
+        startApp();
+        
+    </script>
+</body>
+</html>
